@@ -182,3 +182,24 @@ def plot_initial_conditions(system, labels, colors, legend):
         ax.legend()
     
     plt.show()
+
+def acceleration(a, system):
+    """
+    Computing the gravitational acceleration using Newton's law of gravitation
+    """
+    a.fill(0.0)
+
+    x = system.x
+    m = system.m
+    G = system.G
+    N = system.num_particles
+
+    for i in range(N):
+        for j in range(i + 1, N):
+            r = x[j] - x[i]
+            dist = np.linalg.norm(r)
+
+            factor = G / dist ** 3
+
+            a[i] += factor * m[j] * r
+            a[j] -= factor * m[i] * r
