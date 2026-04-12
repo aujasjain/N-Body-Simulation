@@ -203,3 +203,65 @@ def acceleration(a, system):
 
             a[i] += factor * m[j] * r
             a[j] -= factor * m[i] * r
+
+
+def leapfrog(a, system, dt):
+    """
+    Advance one step with the LeapFrog method.
+    """
+    # Velocity kick (v_1/2)
+    acceleration(a, system)
+    system.v += a * 0.5 * dt
+
+    # Position drift (x_1)
+    system.x += system.v * dt
+
+    # Velocity kick (v_1)
+    acceleration(a, system)
+    system.v += a * 0.5 * dt
+
+def plot_trajectory(sol_x, labels, colors, legend):
+    """
+    Plot 2D trajectories of particles.
+    """
+
+    fig, ax = plt.subplots()
+
+    ax.set_xlabel("$x$ (AU)")
+    ax.set_ylabel("$y$ (AU)")
+    ax.set_aspect("equal", adjustable="box")
+
+    num_particles = sol_x.shape[1]
+
+    for i in range(num_particles):
+        x = sol_x[:, i, 0]
+        y = sol_x[:, i, 1]
+
+        ax.plot(x, y, color=colors[i], label=labels[i])
+
+        ax.scatter(
+            x[-1],
+            y[-1],
+            color=colors[i],
+            s=40,
+        )
+
+    if legend:
+        ax.legend(loc="best")
+
+    plt.tight_layout()
+    plt.show()
+
+def print_simulation_info(system, tf, dt, num_steps, output_interval, sol_size):
+    print("----------------------------------------------------------")
+    print("Simulation Info:")
+    print(f"Number of Particles: {system.num_particles}")
+    print(f"G: {system.G}")
+    print(f"tf: {tf} days (Actual tf = dt * num_steps = {dt * num_steps} days)")
+    print(f"dt: {dt} days")
+    print(f"Num_steps: {num_steps}")
+    print()
+    print(f"Output interval: {output_interval} days")
+    print(f"Estimated solution size: {sol_size}")
+    print("----------------------------------------------------------")
+
