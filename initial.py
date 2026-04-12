@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from mpl_toolkits.mplot3d import Axes3D
 
 class System:
     def __init__(self, num_particles, x, v, m, G):
@@ -180,7 +181,7 @@ def plot_initial_conditions(system, labels, colors, legend):
         ax.scatter(system.x[i, 0], system.x[i, 1], marker="o", color=colors[i], label=labels[i])
 
     if legend:
-        ax.legend()
+        ax.legend(labels, loc="center left", bbox_to_anchor=(1, 0.5))
     
     plt.show()
 
@@ -222,43 +223,50 @@ def leapfrog(a, system, dt):
     system.v += a * 0.5 * dt
 
 def plot_trajectory(sol_x, labels, colors, legend):
-    """
-    Plot 2D trajectories of particles.
-    """
-
-    fig, ax = plt.subplots()
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection="3d")
 
     ax.set_xlabel("$x$ (AU)")
     ax.set_ylabel("$y$ (AU)")
-    ax.set_aspect("equal", adjustable="box")
+    ax.set_zlabel("$z$ (AU)")
 
     num_particles = sol_x.shape[1]
 
     for i in range(num_particles):
         x = sol_x[:, i, 0]
         y = sol_x[:, i, 1]
+        z = sol_x[:, i, 2]
 
-        ax.plot(x, y, color=colors[i], label=labels[i])
+        ax.plot(x, y, z, color=colors[i], label=labels[i])
 
-        ax.scatter(
-            x[-1],
-            y[-1],
-            color=colors[i],
-            s=40,
-        )
+        ax.scatter(x[-1], y[-1], z[-1], color=colors[i], s=40)
 
     if legend:
-        ax.legend(loc="best")
+        ax.legend(labels, loc="center left", bbox_to_anchor=(1, 0.5))
 
     plt.tight_layout()
     plt.show()
 
+def set_equal_axes(ax):
+    limits = np.array([
+        ax.get_xlim3d(),
+        ax.get_ylim3d(),
+        ax.get_zlim3d()
+    ])
+    center = np.mean(limits, axis=1)
+    radius = 0.5 * np.max(limits[:,1] - limits[:,0])
+
+    ax.set_xlim3d([center[0]-radius, center[0]+radius])
+    ax.set_ylim3d([center[1]-radius, center[1]+radius])
+    ax.set_zlim3d([center[2]-radius, center[2]+radius])
+
 def animate_trajectory(sol_x, labels, colors, legend):
-    fig, ax = plt.subplots()
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
 
     ax.set_xlabel("$x$ (AU)")
     ax.set_ylabel("$y$ (AU)")
-    ax.set_aspect("equal")
+    ax.set_zlabel("$z$ (AU)")
 
     num_particles = sol_x.shape[1]
 
@@ -266,23 +274,30 @@ def animate_trajectory(sol_x, labels, colors, legend):
     points = []
 
     for i in range(num_particles):
-        line, = ax.plot([], [], color=colors[i] if colors[i] else None)
-        point, = ax.plot([], [], 'o', color=colors[i] if colors[i] else None)
+        line, = ax.plot([], [], [], color=colors[i] if colors[i] else None)
+        point, = ax.plot([], [], [], 'o', color=colors[i] if colors[i] else None)
 
         lines.append(line)
         points.append(point)
 
-    # Set axis limits once
+    # Set axis limits
     ax.set_xlim(np.min(sol_x[:, :, 0]), np.max(sol_x[:, :, 0]))
     ax.set_ylim(np.min(sol_x[:, :, 1]), np.max(sol_x[:, :, 1]))
+    ax.set_zlim(np.min(sol_x[:, :, 2]), np.max(sol_x[:, :, 2]))
+
+    set_equal_axes(ax)
 
     def update(frame):
         for i in range(num_particles):
             x = sol_x[:frame+1, i, 0]
             y = sol_x[:frame+1, i, 1]
+            z = sol_x[:frame+1, i, 2]
 
             lines[i].set_data(x, y)
+            lines[i].set_3d_properties(z)
+
             points[i].set_data([x[-1]], [y[-1]])
+            points[i].set_3d_properties([z[-1]])
 
         return lines + points
 
@@ -291,43 +306,45 @@ def animate_trajectory(sol_x, labels, colors, legend):
         update,
         frames=len(sol_x),
         interval=30,
-        blit=True
+        blit=False
     )
 
     if legend:
-        ax.legend(labels)
+        ax.legend(labels, loc="center left", bbox_to_anchor=(1.05, 0.5))
 
     save = input("Save animation as video? (y/n): ").strip().lower()
 
     if save == "y":
         print("Saving animation...")
-
         writer = animation.FFMpegWriter(fps=30, bitrate=1800)
-
-        ani.save("n_body_simulation.mp4", writer=writer)
-
-        print("Saved as n_body_simulation.mp4")
-
+        ani.save("n_body_simulation_3d.mp4", writer=writer)
+        print("Saved as n_body_simulation_3d.mp4")
     else:
         plt.show()
 
-    if legend:
-        ax.legend(labels)
-
     plt.show()
+    plt.subplots_adjust(right=0.8)
 
 def print_simulation_info(system, tf, dt, num_steps, output_interval, sol_size):
-    print("----------------------------------------------------------")
-    print("Simulation Info:")
-    print(f"Number of Particles: {system.num_particles}")
-    print(f"G: {system.G}")
-    print(f"tf: {tf} days (Actual tf = dt * num_steps = {dt * num_steps} days)")
-    print(f"dt: {dt} days")
-    print(f"Num_steps: {num_steps}")
-    print()
-    print(f"Output interval: {output_interval} days")
-    print(f"Estimated solution size: {sol_size}")
-    print("----------------------------------------------------------")
+    print("\n" + "=" * 60)
+    print("N-Body Simulation")
+    print("=" * 60)
+
+    print("\nSystem:")
+    print(f"Particles        : {system.num_particles}")
+    print(f"Gravitational G  : {system.G:.6g}")
+
+    print("\nTime Settings:")
+    print(f"Total time (tf)  : {tf:.2f} days")
+    print(f"Time step (dt)   : {dt:.2f} days")
+    print(f"Num steps        : {num_steps}")
+    print(f"Actual tf        : {dt * num_steps:.2f} days")
+
+    print("\nOutput:")
+    print(f"Output interval  : {output_interval:.2f} days")
+    print(f"Stored steps     : {sol_size}")
+
+    print("=" * 60 + "\n")
 
 def get_user_defined_system():
     N = int(input("Enter number of particles: "))
