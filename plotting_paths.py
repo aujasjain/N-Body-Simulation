@@ -7,13 +7,17 @@ INITIAL_CONDITION = "solar_system"
 # Default units is AU, days, and M_sun
 TF = 200.0 * 365.24  # years to days
 DT = 1.0
-OUTPUT_INTERVAL = 0.1 * 365.24  # years to days
+OUTPUT_INTERVAL = 1.0 * 365.24  # years to days
 NUM_STEPS = int(TF / DT)
 
 def main():
     # Get initial conditions
-    system, labels, colors, legend = initial.get_initial_conditions(INITIAL_CONDITION)
+    mode = input("Type 'preset' or 'custom': ").strip().lower()
 
+    if mode == "custom":
+        system, labels, colors, legend = initial.get_user_defined_system()
+    else:
+        system, labels, colors, legend = initial.get_initial_conditions(INITIAL_CONDITION)
     # Initialize memory
     a = np.zeros((system.num_particles, 3))
 
@@ -55,6 +59,6 @@ def main():
 
     print()
     print(f"Runtime: {end - start:.3g} seconds, Solution size: {output_count}")
-    initial.plot_trajectory(sol_x=sol_x, labels=labels, colors=colors, legend=legend)
+    initial.animate_trajectory(sol_x, labels, colors, legend)
 
 main()

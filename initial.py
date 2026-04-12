@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 class System:
     def __init__(self, num_particles, x, v, m, G):
@@ -197,8 +198,8 @@ def acceleration(a, system):
     for i in range(N):
         for j in range(i + 1, N):
             r = x[j] - x[i]
-            dist = np.linalg.norm(r)
-
+            epsilon = 1e-5
+            dist = np.linalg.norm(r) + epsilon
             factor = G / dist ** 3
 
             a[i] += factor * m[j] * r
@@ -252,6 +253,69 @@ def plot_trajectory(sol_x, labels, colors, legend):
     plt.tight_layout()
     plt.show()
 
+def animate_trajectory(sol_x, labels, colors, legend):
+    fig, ax = plt.subplots()
+
+    ax.set_xlabel("$x$ (AU)")
+    ax.set_ylabel("$y$ (AU)")
+    ax.set_aspect("equal")
+
+    num_particles = sol_x.shape[1]
+
+    lines = []
+    points = []
+
+    for i in range(num_particles):
+        line, = ax.plot([], [], color=colors[i] if colors[i] else None)
+        point, = ax.plot([], [], 'o', color=colors[i] if colors[i] else None)
+
+        lines.append(line)
+        points.append(point)
+
+    # Set axis limits once
+    ax.set_xlim(np.min(sol_x[:, :, 0]), np.max(sol_x[:, :, 0]))
+    ax.set_ylim(np.min(sol_x[:, :, 1]), np.max(sol_x[:, :, 1]))
+
+    def update(frame):
+        for i in range(num_particles):
+            x = sol_x[:frame+1, i, 0]
+            y = sol_x[:frame+1, i, 1]
+
+            lines[i].set_data(x, y)
+            points[i].set_data([x[-1]], [y[-1]])
+
+        return lines + points
+
+    ani = animation.FuncAnimation(
+        fig,
+        update,
+        frames=len(sol_x),
+        interval=30,
+        blit=True
+    )
+
+    if legend:
+        ax.legend(labels)
+
+    save = input("Save animation as video? (y/n): ").strip().lower()
+
+    if save == "y":
+        print("Saving animation...")
+
+        writer = animation.FFMpegWriter(fps=30, bitrate=1800)
+
+        ani.save("n_body_simulation.mp4", writer=writer)
+
+        print("Saved as n_body_simulation.mp4")
+
+    else:
+        plt.show()
+
+    if legend:
+        ax.legend(labels)
+
+    plt.show()
+
 def print_simulation_info(system, tf, dt, num_steps, output_interval, sol_size):
     print("----------------------------------------------------------")
     print("Simulation Info:")
@@ -264,4 +328,43 @@ def print_simulation_info(system, tf, dt, num_steps, output_interval, sol_size):
     print(f"Output interval: {output_interval} days")
     print(f"Estimated solution size: {sol_size}")
     print("----------------------------------------------------------")
+
+def get_user_defined_system():
+    N = int(input("Enter number of particles: "))
+
+    x = []
+    v = []
+    m = []
+
+    for i in range(N):
+        print(f"\nParticle {i+1}")
+
+        xi = list(map(float, input("Position (x y z): ").split()))
+        vi = list(map(float, input("Velocity (vx vy vz): ").split()))
+        mi = float(input("Mass: "))
+
+        x.append(xi)
+        v.append(vi)
+        m.append(mi)
+
+    x = np.array(x)
+    v = np.array(v)
+    m = np.array(m)
+
+    G = float(input("Enter gravitational constant G: "))
+
+    system = System(
+        num_particles=N,
+        x=x,
+        v=v,
+        m=m,
+        G=G,
+    )
+
+    system.com_correction()
+
+    labels = [f"Body {i}" for i in range(N)]
+    colors = [None] * N
+
+    return system, labels, colors, False
 
