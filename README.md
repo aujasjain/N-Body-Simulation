@@ -9,12 +9,12 @@ Inspired by https://alvinng4.github.io/grav_sim/.
 - Visualizes trajectories in 3D
 
 ## What I changed:
-- Redesigned the simulation workflow to support interactive user defined systems
+- Redesigned the simulation to support user defined systems
 - Implemented a Leapfrog integrator for stable long-term orbital evolution
-- Replaced the original structure with a fixed timestep simulation pipeline
+- Replaced the original structure with a fixed timestep simulation
 - Added a full user input system for defining particles (position, velocity, mass)
-- Built real-time animation and optional video export functionality
-- Refactored and reorganized the codebase to improve clarity and extensibility
+- Built real-time animation and video export functionality
+- Reorganized the code to improve clarity and extensibility
 
 ## To run:
 ```bash
